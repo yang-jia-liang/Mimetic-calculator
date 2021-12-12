@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #eeeeee;
+        }
+
+        .calculator {
+            --button-width: 80px;
+            --button-height: 80px;
+
+            display: grid;
+            grid-template-areas:
+                    "result    result      result    result"
+                    "ac        plus-minus  percent   divide"
+                    "number-7  number-8    number-9  multiply"
+                    "number-4  number-5    number-6  subtract"
+                    "number-1  number-2    number-3  add"
+                    "number-0  number-0    dot       equal"
+            ;
+            grid-template-columns: repeat(4, var(--button-width));
+            grid-template-rows: repeat(6, var(--button-height));
+            box-shadow: 5px 5px 10px #bebebe, -5px -5px 10px #ffffff;
+            padding: 24px;
+            border-radius: 20px;
+        }
+
+        .calculator button {
+            border: 0;
+            font-size: 24px;
+            color: #999999;
+            margin: 8px;
+            border-radius: calc(var(--button-height) / 2);
+            background: linear-gradient(135deg, rgba(230, 230, 230, 1) 0, rgba(246, 246, 246, 1) 100%);
+            box-shadow:  20px 20px 60px #bebebe, -20px -20px 60px #ffffff;
+        }
+        .calculator button:active {
+            box-shadow: inset 20px 20px 60px #bebebe, inset -20px -20px 60px #ffffff;
+        }
+
+        .result {
+            text-align: right;
+            font-size: 48px;
+            padding: 0 20px;
+            color: #666666;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator" id="calculator">
+        <div style="grid-area: result" class="result">{{ result }}</div>
+
+        <button style="grid-area: ac"         @click="clear">AC</button>
+        <button style="grid-area: plus-minus" @click="toggleClick">±</button>
+        <button style="grid-area: percent"    @click="percentClick">%</button>
+        <button style="grid-area: add"        @click="buttonClick('+')">+</button>
+        <button style="grid-area: subtract"   @click="buttonClick('-')">-</button>
+        <button style="grid-area: multiply"   @click="buttonClick('x')">x</button>
+        <button style="grid-area: divide"     @click="buttonClick('÷')">÷</button>
+        <button style="grid-area: equal"      @click="calculate">=</button>
+
+        <button style="grid-area: number-1" @click="buttonClick('1')">1</button>
+        <button style="grid-area: number-2" @click="buttonClick('2')">2</button>
+        <button style="grid-area: number-3" @click="buttonClick('3')">3</button>
+        <button style="grid-area: number-4" @click="buttonClick('4')">4</button>
+        <button style="grid-area: number-5" @click="buttonClick('5')">5</button>
+        <button style="grid-area: number-6" @click="buttonClick('6')">6</button>
+        <button style="grid-area: number-7" @click="buttonClick('7')">7</button>
+        <button style="grid-area: number-8" @click="buttonClick('8')">8</button>
+        <button style="grid-area: number-9" @click="buttonClick('9')">9</button>
+        <button style="grid-area: number-0" @click="buttonClick('0')">0</button>
+        <button style="grid-area: dot"      @click="buttonClick('.')">.</button>
+    </div>
+</body>
+</html>
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script>
+    new Vue({
+        el: '#calculator',
+        data: {
+            result: '0',
+            hasDot: false,      // 判断是否已经输入小数点
+            hasOperator: false, // 避免连续的运算符
+            zeroStart: true     // 是否0开头
+        },
+        methods: {
+            // 判断是否有效的运算符 + | - | x | ÷，同时不能是连续的运算符
+            isOperator(inputValue) {
+                return ['+', '-', 'x', '÷'].includes(inputValue);
+            },
+            // 按钮点击执行
+            buttonClick(inputValue) {
+                // 初始化状态
+                if (this.result === '0') {
+                    if (inputValue === '-') {
+                        this.result = '-';
+                        this.hasOperator = true;
+                    }
+                    else if (inputValue === '.') {
+                        this.hasDot = true;
+                        this.result += '.';
+                    }
+                    else if (!this.isOperator(inputValue)) {
+                        this.result = inputValue;
+                        this.zeroStart = inputValue === '0'
+                    }
+
+                    return;
+                }
+
+                // 输入数字或小数点，不是点击运算符，继续响应
+                if (!this.isOperator(inputValue)) {
+                    if (inputValue === '.') {
+                        // 避免连续的.
+                        if (!this.hasDot) {
+                            this.result += !this.hasOperator ? '.' : '0.';
+                            this.hasDot = true;
+                            this.zeroStart = false;
+                        }
+                    }
+                    else {
+                        if (inputValue === '0') {
+                            if (this.zeroStart) return;
+                            if (this.hasOperator) this.zeroStart = true;
+                        }
+
+                        this.result += inputValue;
+                        this.hasOperator = false;
+                    }
+
+                    return;
+                }
+
+                // +-x÷ 操作
+                if (!this.hasOperator) {
+                    this.result += inputValue;
+                    this.hasDot = false;        // 重置小数点
+                    this.hasOperator = true;
+                }
+            },
+            // ± 点击
+            toggleClick() {
+                Number(this.result) && (this.result *=  -1);
+            },
+            // % 点击
+            percentClick() {
+                Number(this.result) && (this.result *= 0.01);
+            },
+            // = 点击
+            calculate() {
+                const formatStr =  this.result.replace(/x/g, '*').replace(/÷/g, '/');
+
+                try {
+                    this.result = parseFloat(eval(formatStr).toFixed(6)).toString();
+                } catch (e) {}
+            },
+            // AC 点击
+            clear() {
+                this.result = '0';
+                this.hasDot = false;
+                this.hasOperator = false;
+                this.zeroStart = true;
+            }
+        }
+    })
+</script>
