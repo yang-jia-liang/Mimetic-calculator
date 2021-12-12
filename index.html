@@ -12,6 +12,10 @@
             background-color: #eeeeee;
         }
 
+        [v-cloak] {
+            display: none;
+        }
+
         .calculator {
             --button-width: 80px;
             --button-height: 80px;
@@ -55,7 +59,7 @@
 </head>
 <body>
     <div class="calculator" id="calculator">
-        <div style="grid-area: result" class="result">{{ result }}</div>
+        <div style="grid-area: result" class="result" v-cloak>{{ result }}</div>
 
         <button style="grid-area: ac"         @click="clear">AC</button>
         <button style="grid-area: plus-minus" @click="toggleClick">±</button>
